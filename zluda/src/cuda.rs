@@ -3333,6 +3333,7 @@ pub extern "C" fn cuMemGetAllocationGranularity(
     r#impl::unimplemented()
 }
 
+#[cfg(build_nvcuda = "true")]
 #[cfg_attr(not(test), no_mangle)]
 pub extern "C" fn cuMemGetAllocationPropertiesFromHandle(
     prop: *mut CUmemAllocationProp,
@@ -3682,6 +3683,7 @@ pub extern "C" fn cuSignalExternalSemaphoresAsync(
     r#impl::unimplemented()
 }
 
+#[cfg(build_nvcuda = "true")]
 #[cfg_attr(not(test), no_mangle)]
 pub extern "C" fn cuWaitExternalSemaphoresAsync(
     extSemArray: *const CUexternalSemaphore,
@@ -3742,6 +3744,7 @@ pub extern "C" fn cuStreamWriteValue64(
     r#impl::unimplemented()
 }
 
+#[cfg(build_nvcuda = "true")]
 #[cfg_attr(not(test), no_mangle)]
 pub extern "C" fn cuStreamBatchMemOp(
     stream: CUstream,
@@ -4065,6 +4068,7 @@ pub extern "C" fn cuGraphHostNodeGetParams(
     r#impl::unimplemented()
 }
 
+#[cfg(build_nvcuda = "true")]
 #[cfg_attr(not(test), no_mangle)]
 pub extern "C" fn cuGraphHostNodeSetParams(
     hNode: CUgraphNode,
@@ -4085,6 +4089,7 @@ pub extern "C" fn cuGraphAddChildGraphNode(
     r#impl::unimplemented()
 }
 
+#[cfg(build_nvcuda = "true")]
 #[cfg_attr(not(test), no_mangle)]
 pub extern "C" fn cuGraphChildGraphNodeGetGraph(
     hNode: CUgraphNode,
@@ -4110,6 +4115,7 @@ pub extern "C" fn cuGraphClone(phGraphClone: *mut CUgraph, originalGraph: CUgrap
     r#impl::unimplemented()
 }
 
+#[cfg(build_nvcuda = "true")]
 #[cfg_attr(not(test), no_mangle)]
 pub extern "C" fn cuGraphNodeFindInClone(
     phNode: *mut CUgraphNode,
@@ -4145,6 +4151,7 @@ pub extern "C" fn cuGraphGetRootNodes(
     r#impl::unimplemented()
 }
 
+#[cfg(build_nvcuda = "true")]
 #[cfg_attr(not(test), no_mangle)]
 pub extern "C" fn cuGraphGetEdges(
     hGraph: CUgraph,
@@ -4625,6 +4632,7 @@ pub extern "C" fn cuTexObjectDestroy(texObject: CUtexObject) -> CUresult {
     r#impl::unimplemented()
 }
 
+#[cfg(build_nvcuda = "true")]
 #[cfg_attr(not(test), no_mangle)]
 pub extern "C" fn cuTexObjectGetResourceDesc(
     pResDesc: *mut CUDA_RESOURCE_DESC,
