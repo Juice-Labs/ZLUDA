@@ -5,7 +5,6 @@ authors = ["Andrzej Janik <vosen@vosen.pl>"]
 edition = "2018"
 
 [lib]
-name = "zluda"
 
 [dependencies]
 ptx = { path = "../ptx" }
