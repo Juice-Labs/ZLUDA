@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 extern crate level_zero as l0;
 extern crate level_zero_sys as l0_sys;
 #[macro_use]
