@@ -98,8 +98,8 @@ pub struct ContextData {
 
 impl ContextData {
     pub fn new(
-        l0_ctx: &mut l0::Context,
-        l0_dev: &l0::Device,
+        l0_ctx: c_uint,
+        l0_dev: c_uint,
         flags: c_uint,
         is_primary: bool,
         dev: *mut device::Device,

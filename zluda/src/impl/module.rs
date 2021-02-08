@@ -30,7 +30,7 @@ impl HasLivenessCookie for ModuleData {
 pub struct ModuleData {
     pub spirv: SpirvModule,
     // This should be a Vec<>, but I'm feeling lazy
-    pub device_binaries: HashMap<device::Index, CompiledModule>,
+    // pub device_binaries: HashMap<device::Index, CompiledModule>,
 }
 
 pub struct SpirvModule {
@@ -38,11 +38,6 @@ pub struct SpirvModule {
     pub kernel_info: HashMap<String, ptx::KernelInfo>,
     pub should_link_ptx_impl: Option<&'static [u8]>,
     pub build_options: CString,
-}
-
-pub struct CompiledModule {
-    pub base: l0::Module,
-    pub kernels: HashMap<CString, Box<Function>>,
 }
 
 impl<L, T, E> From<ptx::ParseError<L, T, E>> for CUresult {
@@ -77,32 +72,9 @@ impl SpirvModule {
             build_options: spirv_module.build_options,
         })
     }
-
-    pub fn compile(&self, ctx: &mut l0::Context, dev: &l0::Device) -> Result<l0::Module, CUresult> {
-        let byte_il = unsafe {
-            slice::from_raw_parts(
-                self.binaries.as_ptr() as *const u8,
-                self.binaries.len() * mem::size_of::<u32>(),
-            )
-        };
-        let l0_module = match self.should_link_ptx_impl {
-            None => {
-                l0::Module::build_spirv(ctx, dev, byte_il, Some(self.build_options.as_c_str())).0
-            }
-            Some(ptx_impl) => {
-                l0::Module::build_link_spirv(
-                    ctx,
-                    &dev,
-                    &[ptx_impl, byte_il],
-                    Some(self.build_options.as_c_str()),
-                )
-                .0
-            }
-        };
-        Ok(l0_module?)
-    }
 }
 
+/*
 pub fn get_function(
     hfunc: *mut *mut Function,
     hmod: *mut Module,
@@ -115,6 +87,7 @@ pub fn get_function(
     let function: *mut Function = GlobalState::lock_current_context(|ctx| {
         let module = unsafe { &mut *hmod }.as_result_mut()?;
         let device = unsafe { &mut *ctx.device };
+        
         let compiled_module = match module.device_binaries.entry(device.index) {
             hash_map::Entry::Occupied(entry) => entry.into_mut(),
             hash_map::Entry::Vacant(entry) => {
@@ -156,32 +129,13 @@ pub fn get_function(
     unsafe { *hfunc = function };
     Ok(())
 }
+*/
 
 pub(crate) fn load_data(pmod: *mut *mut Module, image: *const c_void) -> Result<(), CUresult> {
     let spirv_data = SpirvModule::new_raw(image as *const _)?;
-    load_data_impl(pmod, spirv_data)
-}
-
-pub fn load_data_impl(pmod: *mut *mut Module, spirv_data: SpirvModule) -> Result<(), CUresult> {
-    let module = GlobalState::lock_current_context(|ctx| {
-        let device = unsafe { &mut *ctx.device };
-        let l0_module = spirv_data.compile(&mut device.l0_context, &device.base)?;
-        let mut device_binaries = HashMap::new();
-        let compiled_module = CompiledModule {
-            base: l0_module,
-            kernels: HashMap::new(),
-        };
-        device_binaries.insert(device.index, compiled_module);
-        let module_data = ModuleData {
-            spirv: spirv_data,
-            device_binaries,
-        };
-        Ok::<_, CUresult>(module_data)
-    })??;
-    let module_ptr = Box::into_raw(Box::new(Module::new(module)));
-    unsafe { *pmod = module_ptr };
     Ok(())
 }
+
 
 pub(crate) fn unload(module: *mut Module) -> Result<(), CUresult> {
     if module == ptr::null_mut() {
@@ -201,5 +155,5 @@ pub(crate) fn load(pmod: *mut *mut Module, fname: *const i8) -> Result<(), CUres
     let file = std::fs::read(path_utf8).map_err(|_| CUresult::CUDA_ERROR_FILE_NOT_FOUND)?;
     let module_text = std::str::from_utf8(&file).map_err(|_| CUresult::CUDA_ERROR_INVALID_PTX)?;
     let spirv_data = SpirvModule::new(module_text)?;
-    load_data_impl(pmod, spirv_data)
+    Ok(())
 }

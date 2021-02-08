@@ -203,6 +203,7 @@ unsafe extern "C" fn get_module_from_cubin(
 ) -> CUresult {
     // Not sure what those two parameters are actually used for,
     // they are somehow involved in __cudaRegisterHostVar
+    /*
     if ptr1 != ptr::null_mut() || ptr2 != ptr::null_mut() {
         return CUresult::CUDA_ERROR_NOT_SUPPORTED;
     }
@@ -245,6 +246,7 @@ unsafe extern "C" fn get_module_from_cubin(
             Err(_) => continue,
         }
     }
+    */
     CUresult::CUDA_ERROR_COMPAT_NOT_SUPPORTED_ON_DEVICE
 }
 
