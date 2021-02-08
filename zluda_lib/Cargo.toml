@@ -6,7 +6,7 @@ edition = "2018"
 
 [lib]
 name = "nvcuda"
-crate-type = ["cdylib"]
+crate-type = ["staticlib", "cdylib"]
 
 [dependencies]
 zluda = { path = "../zluda" }
