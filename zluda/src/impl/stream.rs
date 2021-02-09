@@ -6,6 +6,8 @@ use std::{mem, ptr};
 
 use super::{HasLivenessCookie, LiveCheck};
 
+use std::{os::raw::c_uint};
+
 pub type Stream = LiveCheck<StreamData>;
 
 pub const CU_STREAM_LEGACY: *mut Stream = 1 as *mut _;
@@ -33,14 +35,14 @@ impl HasLivenessCookie for StreamData {
 
 pub struct StreamData {
     pub context: *mut ContextData,
-    pub queue: l0::CommandQueue,
+    pub queue: c_uint,
 }
 
 impl StreamData {
-    pub fn new_unitialized(ctx: &mut l0::Context, dev: &l0::Device) -> Result<Self, CUresult> {
+    pub fn new_unitialized(ctx: c_uint, dev: c_uint) -> Result<Self, CUresult> {
         Ok(StreamData {
             context: ptr::null_mut(),
-            queue: l0::CommandQueue::new(ctx, dev)?,
+            queue: 0,
         })
     }
     pub fn new(ctx: &mut ContextData) -> Result<Self, CUresult> {
@@ -48,14 +50,12 @@ impl StreamData {
         let l0_dev = &unsafe { &*ctx.device }.base;
         Ok(StreamData {
             context: ctx as *mut _,
-            queue: l0::CommandQueue::new(l0_ctx, l0_dev)?,
+            queue: 0,
         })
     }
 
-    pub fn command_list(&self) -> Result<l0::CommandList, l0::sys::_ze_result_t> {
-        let ctx = unsafe { &mut *self.context };
-        let dev = unsafe { &mut *ctx.device };
-        l0::CommandList::new(&mut dev.l0_context, &dev.base)
+    pub fn command_list(&self) -> Result<c_uint, CUresult> {
+        return Err(CUresult::CUDA_ERROR_UNKNOWN);
     }
 }
 

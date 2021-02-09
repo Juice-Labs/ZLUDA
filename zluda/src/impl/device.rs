@@ -20,11 +20,7 @@ pub struct Device {
     pub base: c_uint,
     pub default_queue: c_uint,
     pub l0_context: c_uint,
-    pub primary_context: context::Context,
-    properties: Option<Box<l0::sys::ze_device_properties_t>>,
-    image_properties: Option<Box<l0::sys::ze_device_image_properties_t>>,
-    memory_properties: Option<Vec<l0::sys::ze_device_memory_properties_t>>,
-    compute_properties: Option<Box<l0::sys::ze_device_compute_properties_t>>,
+    pub primary_context: context::Context
 }
 
 unsafe impl Send for Device {}
@@ -32,7 +28,7 @@ unsafe impl Send for Device {}
 impl Device {
     // Unsafe because it does not fully initalize primary_context
     unsafe fn new(drv: c_uint, l0_dev: c_uint, idx: usize) -> Result<Self, CUresult> {
-        let mut ctx = 0;
+        let ctx = 0;
         let queue = 0;
         let primary_context = context::Context::new(context::ContextData::new(
             drv,
@@ -46,70 +42,19 @@ impl Device {
             base: l0_dev,
             default_queue: queue,
             l0_context: ctx,
-            primary_context: primary_context,
-            properties: None,
-            image_properties: None,
-            memory_properties: None,
-            compute_properties: None,
+            primary_context: primary_context
         })
     }
 
-    fn get_properties<'a>(&'a mut self) -> l0::Result<&'a l0::sys::ze_device_properties_t> {
-        if let Some(ref prop) = self.properties {
-            return Ok(prop);
-        }
-        match self.base.get_properties() {
-            Ok(prop) => Ok(self.properties.get_or_insert(prop)),
-            Err(e) => Err(e),
-        }
-    }
-
-    fn get_image_properties(&mut self) -> l0::Result<&l0::sys::ze_device_image_properties_t> {
-        if let Some(ref prop) = self.image_properties {
-            return Ok(prop);
-        }
-        match self.base.get_image_properties() {
-            Ok(prop) => Ok(self.image_properties.get_or_insert(prop)),
-            Err(e) => Err(e),
-        }
-    }
-
-    fn get_memory_properties(&mut self) -> l0::Result<&[l0::sys::ze_device_memory_properties_t]> {
-        if let Some(ref prop) = self.memory_properties {
-            return Ok(prop);
-        }
-        match self.base.get_memory_properties() {
-            Ok(prop) => Ok(self.memory_properties.get_or_insert(prop)),
-            Err(e) => Err(e),
-        }
-    }
-
-    fn get_compute_properties(&mut self) -> l0::Result<&l0::sys::ze_device_compute_properties_t> {
-        if let Some(ref prop) = self.compute_properties {
-            return Ok(prop);
-        }
-        match self.base.get_compute_properties() {
-            Ok(prop) => Ok(self.compute_properties.get_or_insert(prop)),
-            Err(e) => Err(e),
-        }
-    }
 
     pub fn late_init(&mut self) {
         self.primary_context.as_option_mut().unwrap().device = self as *mut _;
     }
 
-    fn get_max_simd(&mut self) -> l0::Result<u32> {
-        let props = self.get_compute_properties()?;
-        Ok(*props.subGroupSizes[0..props.numSubGroupSizes as usize]
-            .iter()
-            .max()
-            .unwrap())
-    }
 }
 
 pub fn init(driver: c_uint) -> Result<Vec<Device>, CUresult> {
-    let ze_devices : Vec<Device>;
-    Ok(ze_devices)
+    Err(CUresult::CUDA_ERROR_INVALID_VALUE)
 }
 
 pub fn get_count(count: *mut c_int) -> Result<(), CUresult> {

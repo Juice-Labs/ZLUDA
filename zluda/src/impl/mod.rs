@@ -131,30 +131,6 @@ impl<T: CudaRepr> Decuda<*mut T::Impl> for *mut T {
     }
 }
 
-impl From<l0::sys::ze_result_t> for CUresult {
-    fn from(result: l0::sys::ze_result_t) -> Self {
-        match result {
-            l0::sys::ze_result_t::ZE_RESULT_SUCCESS => CUresult::CUDA_SUCCESS,
-            l0_sys::ze_result_t::ZE_RESULT_ERROR_UNINITIALIZED => {
-                CUresult::CUDA_ERROR_NOT_INITIALIZED
-            }
-            l0_sys::ze_result_t::ZE_RESULT_ERROR_INVALID_ENUMERATION
-            | l0_sys::ze_result_t::ZE_RESULT_ERROR_INVALID_ARGUMENT
-            | l0_sys::ze_result_t::ZE_RESULT_ERROR_INVALID_GROUP_SIZE_DIMENSION
-            | l0_sys::ze_result_t::ZE_RESULT_ERROR_INVALID_GLOBAL_WIDTH_DIMENSION => {
-                CUresult::CUDA_ERROR_INVALID_VALUE
-            }
-            l0_sys::ze_result_t::ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY => {
-                CUresult::CUDA_ERROR_OUT_OF_MEMORY
-            }
-            l0_sys::ze_result_t::ZE_RESULT_ERROR_UNSUPPORTED_FEATURE => {
-                CUresult::CUDA_ERROR_NOT_SUPPORTED
-            }
-            _ => CUresult::CUDA_ERROR_UNKNOWN,
-        }
-    }
-}
-
 impl<T> From<TryLockError<T>> for CUresult {
     fn from(_: TryLockError<T>) -> Self {
         CUresult::CUDA_ERROR_ILLEGAL_STATE
@@ -170,13 +146,6 @@ impl Encuda for CUresult {
     type To = CUresult;
     fn encuda(self: Self) -> Self::To {
         self
-    }
-}
-
-impl Encuda for l0::sys::ze_result_t {
-    type To = CUresult;
-    fn encuda(self: Self) -> Self::To {
-        self.into()
     }
 }
 
@@ -283,11 +252,6 @@ impl GlobalState {
     }
 }
 
-// TODO: implement
-fn is_intel_gpu_driver(_: &l0::Driver) -> bool {
-    true
-}
-
 pub fn init() -> Result<(), CUresult> {
     let mut global_state = GLOBAL_STATE
         .lock()
@@ -295,15 +259,7 @@ pub fn init() -> Result<(), CUresult> {
     if global_state.is_some() {
         return Ok(());
     }
-    l0::init()?;
-    let drivers = l0::Driver::get()?;
-    let devices = match drivers.into_iter().find(is_intel_gpu_driver) {
-        None => return Err(CUresult::CUDA_ERROR_UNKNOWN),
-        Some(driver) => device::init(&driver)?,
-    };
-    *global_state = Some(GlobalState { devices });
-    drop(global_state);
-    Ok(())
+    Err(CUresult::CUDA_ERROR_UNKNOWN)
 }
 
 macro_rules! stringify_curesult {

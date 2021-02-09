@@ -24,10 +24,9 @@ impl HasLivenessCookie for FunctionData {
 }
 
 pub struct FunctionData {
-    pub base: l0::Kernel<'static>,
+    pub base: c_uint,
     pub arg_size: Vec<usize>,
     pub use_shared_mem: bool,
-    pub properties: Option<Box<l0::sys::ze_kernel_properties_t>>,
     pub legacy_args: LegacyArguments,
 }
 
@@ -51,14 +50,8 @@ impl LegacyArguments {
 }
 
 impl FunctionData {
-    fn get_properties(&mut self) -> Result<&l0::sys::ze_kernel_properties_t, l0::sys::ze_result_t> {
-        if let None = self.properties {
-            self.properties = Some(self.base.get_properties()?)
-        }
-        match self.properties {
-            Some(ref props) => Ok(props.as_ref()),
-            None => unsafe { hint::unreachable_unchecked() },
-        }
+    fn get_properties(&mut self) -> Result<c_uint, c_uint> {
+        Err(0)
     }
 }
 
@@ -84,12 +77,6 @@ pub fn launch_kernel(
     GlobalState::lock_stream(hstream, |stream| {
         let func: &mut FunctionData = unsafe { &mut *f }.as_result_mut()?;
         if kernel_params != ptr::null_mut() {
-            for (i, arg_size) in func.arg_size.iter().enumerate() {
-                unsafe {
-                    func.base
-                        .set_arg_raw(i as u32, *arg_size, *kernel_params.add(i))?
-                };
-            }
         } else {
             let mut offset = 0;
             let mut buffer_ptr = None;
@@ -119,39 +106,12 @@ pub fn launch_kernel(
                     let mut offset = 0;
                     for (i, arg_size) in func.arg_size.iter().enumerate() {
                         let buffer_offset = round_up_to_multiple(offset, *arg_size);
-                        unsafe {
-                            func.base.set_arg_raw(
-                                i as u32,
-                                *arg_size,
-                                buffer_ptr.add(buffer_offset) as *const _,
-                            )?
-                        };
                         offset = buffer_offset + *arg_size;
                     }
                 }
                 _ => return Err(CUresult::CUDA_ERROR_INVALID_VALUE),
             }
         }
-        if func.use_shared_mem {
-            unsafe {
-                func.base.set_arg_raw(
-                    func.arg_size.len() as u32,
-                    shared_mem_bytes as usize,
-                    ptr::null(),
-                )?
-            };
-        }
-        func.base
-            .set_group_size(block_dim_x, block_dim_y, block_dim_z)?;
-        func.legacy_args.reset();
-        let mut cmd_list = stream.command_list()?;
-        cmd_list.append_launch_kernel(
-            &mut func.base,
-            &[grid_dim_x, grid_dim_y, grid_dim_z],
-            None,
-            &mut [],
-        )?;
-        stream.queue.execute(cmd_list)?;
         Ok(())
     })?
 }
@@ -168,17 +128,7 @@ pub(crate) fn get_attribute(
     if pi == ptr::null_mut() || func == ptr::null_mut() {
         return Err(CUresult::CUDA_ERROR_INVALID_VALUE);
     }
-    match attrib {
-        CUfunction_attribute::CU_FUNC_ATTRIBUTE_MAX_THREADS_PER_BLOCK => {
-            let max_threads = GlobalState::lock_function(func, |func| {
-                let props = func.get_properties()?;
-                Ok::<_, CUresult>(props.maxSubgroupSize * props.maxNumSubgroups)
-            })??;
-            unsafe { *pi = max_threads as i32 };
-            Ok(())
-        }
-        _ => Err(CUresult::CUDA_ERROR_NOT_SUPPORTED),
-    }
+    Err(CUresult::CUDA_ERROR_NOT_SUPPORTED)
 }
 
 pub(crate) fn set_block_shape(func: *mut Function, x: i32, y: i32, z: i32) -> Result<(), CUresult> {

@@ -4845,15 +4845,15 @@ pub unsafe extern "C" fn zludaPtxToSpirv(
     let module = module::SpirvModule::new(s);
     match module {
         Ok(module) => {
-            
-            if (module.binaries.len() * 4) < (*spirv_len) as usize {
+            let availLen = *spirv_len as usize;
+            if availLen < (module.binaries.len() * 4) {
                 *spirv_len = (module.binaries.len() as u32) * 4;
                 return CUresult::CUDA_ERROR_INVALID_VALUE;
             }
 
             *spirv_len = (module.binaries.len() as u32) * 4;
 
-            ptr::copy(&module.binaries[0], spirv_data, module.binaries.len() * 4);
+            ptr::copy(&module.binaries[0], spirv_data, module.binaries.len());
             return CUresult::CUDA_SUCCESS;
         }
         Err(err) => return err,
