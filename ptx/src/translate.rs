@@ -1149,15 +1149,15 @@ fn emit_function_header<'a>(
 }
 
 fn emit_capabilities(builder: &mut dr::Builder) {
-    builder.capability(spirv::Capability::GenericPointer);
+    //builder.capability(spirv::Capability::GenericPointer);
     builder.capability(spirv::Capability::Linkage);
     builder.capability(spirv::Capability::Addresses);
     builder.capability(spirv::Capability::Kernel);
-    builder.capability(spirv::Capability::Int8);
+    //builder.capability(spirv::Capability::Int8);
     builder.capability(spirv::Capability::Int16);
-    builder.capability(spirv::Capability::Int64);
-    builder.capability(spirv::Capability::Float16);
-    builder.capability(spirv::Capability::Float64);
+    //builder.capability(spirv::Capability::Int64);
+    //builder.capability(spirv::Capability::Float16);
+    //builder.capability(spirv::Capability::Float64);
     // TODO: re-enable when Intel float control extension works
     //builder.capability(spirv::Capability::FunctionFloatControlINTEL);
 }
@@ -1170,6 +1170,10 @@ fn emit_extensions(_builder: &mut dr::Builder) {
 
 fn emit_opencl_import(builder: &mut dr::Builder) -> spirv::Word {
     builder.ext_inst_import("OpenCL.std")
+}
+
+fn emit_opengl_import(builder: &mut dr::Builder) -> spirv::Word {
+    builder.ext_inst_import("GLSL.std.450")
 }
 
 fn emit_memory_model(builder: &mut dr::Builder) {
@@ -4049,11 +4053,13 @@ fn emit_implicit_conversion(
     match (from_parts.kind, to_parts.kind, cv.kind) {
         (_, _, ConversionKind::PtrToBit(typ)) => {
             let dst_type = map.get_or_add_scalar(builder, typ.into());
-            builder.convert_ptr_to_u(dst_type, Some(cv.dst), cv.src)?;
+            //builder.convert_ptr_to_u(dst_type, Some(cv.dst), cv.src)?;
+            builder.u_convert(dst_type, Some(cv.dst), cv.src)?;
         }
         (_, _, ConversionKind::BitToPtr(_)) => {
             let dst_type = map.get_or_add(builder, SpirvType::from(cv.to.clone()));
-            builder.convert_u_to_ptr(dst_type, Some(cv.dst), cv.src)?;
+            //builder.convert_u_to_ptr(dst_type, Some(cv.dst), cv.src)?;
+            builder.u_convert(dst_type, Some(cv.dst), cv.src)?;
         }
         (TypeKind::Scalar, TypeKind::Scalar, ConversionKind::Default) => {
             if from_parts.width == to_parts.width {
