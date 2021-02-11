@@ -469,7 +469,13 @@ pub struct KernelInfo {
     pub uses_shared_mem: bool,
 }
 
+enum ArchitectureTarget {
+    OpenCL,
+    OpenGL
+}
+
 pub fn to_spirv_module<'a>(ast: ast::Module<'a>) -> Result<Module, TranslateError> {
+    const architecture: ArchitectureTarget = ArchitectureTarget::OpenGL;
     let mut id_defs = GlobalStringIdResolver::new(1);
     let mut ptx_impl_imports = HashMap::new();
     let directives = ast
@@ -493,10 +499,22 @@ pub fn to_spirv_module<'a>(ast: ast::Module<'a>) -> Result<Module, TranslateErro
     let denorm_information = compute_denorm_information(&directives);
     // https://www.khronos.org/registry/spir-v/specs/unified1/SPIRV.html#_a_id_logicallayout_a_logical_layout_of_a_module
     builder.set_version(1, 3);
-    emit_capabilities(&mut builder);
+
+    let mut api_id : u32 = 0;
+
+    if let ArchitectureTarget::OpenGL = architecture  {
+        emit_gl_capabilities(&mut builder);
+        api_id = emit_opengl_import(&mut builder);  
+        emit_gl_memory_model(&mut builder);
+    }
+    else
+    {
+        emit_cl_capabilities(&mut builder);
+        api_id = emit_opencl_import(&mut builder);   
+        emit_cl_memory_model(&mut builder);
+    }
+   
     emit_extensions(&mut builder);
-    let opencl_id = emit_opencl_import(&mut builder);
-    emit_memory_model(&mut builder);
     let mut map = TypeWordMap::new(&mut builder);
     emit_builtins(&mut builder, &mut map, &id_defs);
     let mut kernel_info = HashMap::new();
@@ -505,7 +523,7 @@ pub fn to_spirv_module<'a>(ast: ast::Module<'a>) -> Result<Module, TranslateErro
         &mut builder,
         &mut map,
         &id_defs,
-        opencl_id,
+        api_id,
         &denorm_information,
         &call_map,
         directives,
@@ -1109,7 +1127,8 @@ fn emit_function_header<'a>(
                 }
             }
             global_variables.append(&mut interface);
-            builder.entry_point(spirv::ExecutionModel::Kernel, fn_id, name, global_variables);
+            //builder.entry_point(spirv::ExecutionModel::Kernel, fn_id, name, global_variables);
+            builder.entry_point(spirv::ExecutionModel::GLCompute, fn_id, name, global_variables);
             fn_id
         }
         MethodName::Func(name) => name,
@@ -1148,18 +1167,23 @@ fn emit_function_header<'a>(
     Ok(())
 }
 
-fn emit_capabilities(builder: &mut dr::Builder) {
-    //builder.capability(spirv::Capability::GenericPointer);
+fn emit_cl_capabilities(builder: &mut dr::Builder) {
+    builder.capability(spirv::Capability::GenericPointer);
     builder.capability(spirv::Capability::Linkage);
     builder.capability(spirv::Capability::Addresses);
     builder.capability(spirv::Capability::Kernel);
-    //builder.capability(spirv::Capability::Int8);
+    builder.capability(spirv::Capability::Int8);
     builder.capability(spirv::Capability::Int16);
-    //builder.capability(spirv::Capability::Int64);
-    //builder.capability(spirv::Capability::Float16);
-    //builder.capability(spirv::Capability::Float64);
+    builder.capability(spirv::Capability::Int64);
+    builder.capability(spirv::Capability::Float16);
+    builder.capability(spirv::Capability::Float64);
     // TODO: re-enable when Intel float control extension works
     //builder.capability(spirv::Capability::FunctionFloatControlINTEL);
+}
+
+fn emit_gl_capabilities(builder: &mut dr::Builder) {
+    builder.capability(spirv::Capability::Shader);
+    builder.capability(spirv::Capability::Int16);
 }
 
 // http://htmlpreview.github.io/?https://github.com/KhronosGroup/SPIRV-Registry/blob/master/extensions/KHR/SPV_KHR_float_controls.html
@@ -1176,12 +1200,22 @@ fn emit_opengl_import(builder: &mut dr::Builder) -> spirv::Word {
     builder.ext_inst_import("GLSL.std.450")
 }
 
-fn emit_memory_model(builder: &mut dr::Builder) {
+fn emit_cl_memory_model(builder: &mut dr::Builder) {
     builder.memory_model(
         spirv::AddressingModel::Physical64,
         spirv::MemoryModel::OpenCL,
     );
 }
+
+fn emit_gl_memory_model(builder: &mut dr::Builder) {
+    // Is it possible to use the Vulkan memory model or the physical memory model 
+    // extensions with shaders?
+    builder.memory_model(
+        spirv::AddressingModel::Logical,
+        spirv::MemoryModel::GLSL450,
+    );
+}
+
 
 fn translate_directive<'input>(
     id_defs: &mut GlobalStringIdResolver<'input>,
